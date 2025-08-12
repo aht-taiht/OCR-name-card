@@ -1,24 +1,24 @@
 #!/usr/bin/env python3
 """
 Name Card Reader App
-Uses EasyOCR to extract text from name card images and Ollama to process the extracted information.
+Uses EasyOCR to extract text from name card images and HuggingFace to process the extracted information.
 """
 
 import os
 import sys
 from pathlib import Path
 import json
-import requests
 import easyocr
 from PIL import Image
 import argparse
+from huggingface_hub import InferenceClient
 
 
 class NameCardReader:
-    def __init__(self, ollama_host="http://localhost:11434"):
-        """Initialize the name card reader with EasyOCR and Ollama configuration."""
+    def __init__(self, model_name="microsoft/DialoGPT-medium", hf_token=None):
+        """Initialize the name card reader with EasyOCR and HuggingFace configuration."""
         self.reader = easyocr.Reader(['en'])
-        self.ollama_host = ollama_host
+        self.client = InferenceClient(model=model_name, token=hf_token)
         
     def extract_text(self, image_path):
         """Extract text from name card image using EasyOCR."""
@@ -39,8 +39,8 @@ class NameCardReader:
             print(f"Error extracting text: {e}")
             return []
     
-    def process_with_ollama(self, extracted_text, model="gpt-oss:20b"):
-        """Process extracted text with Ollama to structure the information."""
+    def process_with_huggingface(self, extracted_text):
+        """Process extracted text with HuggingFace to structure the information."""
         if not extracted_text:
             return {"error": "No text extracted from image"}
             
@@ -65,32 +65,25 @@ class NameCardReader:
         """
         
         try:
-            response = requests.post(
-                f"{self.ollama_host}/api/generate",
-                json={
-                    "model": model,
-                    "prompt": prompt,
-                    "stream": False
-                },
-                timeout=30
+            response = self.client.text_generation(
+                prompt,
+                max_new_tokens=512,
+                temperature=0.1,
+                return_full_text=False
             )
             
-            if response.status_code == 200:
-                result = response.json()
-                try:
-                    # Try to parse the response as JSON
-                    structured_data = json.loads(result['response'])
-                    return structured_data
-                except json.JSONDecodeError:
-                    # If not valid JSON, return the raw response
-                    return {"raw_response": result['response']}
-            else:
-                return {"error": f"Ollama request failed with status {response.status_code}"}
+            try:
+                # Try to parse the response as JSON
+                structured_data = json.loads(response)
+                return structured_data
+            except json.JSONDecodeError:
+                # If not valid JSON, return the raw response
+                return {"raw_response": response}
                 
-        except requests.exceptions.RequestException as e:
-            return {"error": f"Failed to connect to Ollama: {e}"}
+        except Exception as e:
+            return {"error": f"Failed to process with HuggingFace: {e}"}
     
-    def process_name_card(self, image_path, model="gpt-oss:20b"):
+    def process_name_card(self, image_path):
         """Complete workflow to process a name card image."""
         print(f"Processing image: {image_path}")
         
@@ -107,9 +100,9 @@ class NameCardReader:
         
         print(f"Extracted {len(extracted_text)} text elements")
         
-        # Process with Ollama
-        print("Processing with Ollama...")
-        structured_data = self.process_with_ollama(extracted_text, model)
+        # Process with HuggingFace
+        print("Processing with HuggingFace...")
+        structured_data = self.process_with_huggingface(extracted_text)
         
         return {
             "image_path": image_path,
@@ -121,17 +114,17 @@ class NameCardReader:
 def main():
     parser = argparse.ArgumentParser(description="Read and process name card images")
     parser.add_argument("image_path", help="Path to the name card image")
-    parser.add_argument("--model", default="gpt-oss:20b", help="Ollama model to use (default: gpt-oss:20b)")
-    parser.add_argument("--ollama-host", default="http://localhost:11434", help="Ollama host URL")
+    parser.add_argument("--model", default="microsoft/DialoGPT-medium", help="HuggingFace model to use (default: microsoft/DialoGPT-medium)")
+    parser.add_argument("--hf-token", help="HuggingFace API token")
     parser.add_argument("--output", help="Output file to save results (JSON format)")
     
     args = parser.parse_args()
     
     # Initialize name card reader
-    reader = NameCardReader(ollama_host=args.ollama_host)
+    reader = NameCardReader(model_name=args.model, hf_token=args.hf_token)
     
     # Process the image
-    result = reader.process_name_card(args.image_path, args.model)
+    result = reader.process_name_card(args.image_path)
     
     # Print results
     print("\n" + "="*50)
