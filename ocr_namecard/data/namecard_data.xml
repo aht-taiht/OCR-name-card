@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Default System Parameters -->
+    <record id="param_hf_model" model="ir.config_parameter">
+        <field name="key">ocr_namecard.hf_model</field>
+        <field name="value">microsoft/DialoGPT-medium</field>
+    </record>
+    
+    <!-- Demo Data (only in demo mode) -->
+    <record id="demo_namecard_1" model="ocr.namecard" noupdate="1">
+        <field name="image_filename">demo_card_1.jpg</field>
+        <field name="contact_name">John Smith</field>
+        <field name="job_title">Senior Developer</field>
+        <field name="company_name">Tech Corp</field>
+        <field name="email">john.smith@techcorp.com</field>
+        <field name="phone">+1-555-0123</field>
+        <field name="website">www.techcorp.com</field>
+        <field name="address">123 Main St, San Francisco, CA 94105</field>
+        <field name="processing_status">done</field>
+        <field name="extraction_confidence">0.92</field>
+        <field name="extracted_text">John Smith Senior Developer Tech Corp john.smith@techcorp.com +1-555-0123 www.techcorp.com 123 Main St, San Francisco, CA 94105</field>
+    </record>
+    
+    <record id="demo_namecard_2" model="ocr.namecard" noupdate="1">
+        <field name="image_filename">demo_card_2.jpg</field>
+        <field name="contact_name">Sarah Johnson</field>
+        <field name="job_title">Marketing Manager</field>
+        <field name="company_name">Digital Solutions Inc</field>
+        <field name="email">sarah.j@digitalsolutions.com</field>
+        <field name="phone">+1-555-0456</field>
+        <field name="mobile">+1-555-0789</field>
+        <field name="website">www.digitalsolutions.com</field>
+        <field name="address">456 Business Ave, New York, NY 10001</field>
+        <field name="processing_status">done</field>
+        <field name="extraction_confidence">0.88</field>
+        <field name="extracted_text">Sarah Johnson Marketing Manager Digital Solutions Inc sarah.j@digitalsolutions.com +1-555-0456 +1-555-0789 www.digitalsolutions.com 456 Business Ave, New York, NY 10001</field>
+    </record>
+</odoo>

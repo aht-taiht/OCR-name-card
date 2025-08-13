@@ -1,185 +1,322 @@
-# Name Card Reader App
+# OCR Name Card Reader
 
-A Python application that uses EasyOCR and Ollama to extract text from name card images and structure the information intelligently.
+A sophisticated OCR (Optical Character Recognition) system designed to extract and structure information from business cards using PaddleOCR and HuggingFace models, with Google Drive integration for batch processing.
 
 ## Features
 
-- 📷 Extract text from name card images using EasyOCR
-- 🤖 Process extracted text with Ollama to structure information
-- 🌐 Web interface for easy image uploads
-- 📱 Command-line interface for batch processing
-- 📊 JSON output with structured contact information
-
-## Prerequisites
-
-1. **Python 3.8+**
-2. **Ollama installed and running** - [Install Ollama](https://ollama.ai/)
-3. **At least one language model downloaded** (e.g., `llama3.2`)
-
-### Install Ollama and Models
-
-```bash
-# Install Ollama (macOS)
-brew install ollama
-
-# Or download from https://ollama.ai/
-
-# Start Ollama service
-ollama serve
-
-# Download a model (in another terminal)
-ollama pull llama3.2
-```
+- **Multi-language OCR**: Supports Japanese, English, and Vietnamese text recognition using PaddleOCR
+- **Google Drive Integration**: Process images directly from Google Drive folders
+- **Advanced Text Processing**: Uses HuggingFace models to structure extracted text into JSON format
+- **Web Interface**: Modern web UI with drag-and-drop upload and Google Drive folder selection
+- **Batch Processing**: Process multiple images from local folders or Google Drive
+- **High Accuracy**: Combines multiple OCR approaches and language models for optimal results
+- **Structured Output**: Automatically organizes extracted information into categories
 
 ## Installation
 
-1. **Clone or download this repository**
-2. **Create a virtual environment** (recommended):
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
-3. **Install dependencies**:
-   ```bash
-   pip install -r requirements.txt
-   ```
+### Prerequisites
+
+- Python 3.8 or higher
+- pip package manager
+- Google Drive API credentials (for Google Drive features)
+
+### Setup
+
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd OCR-name-card
+```
+
+2. Install required dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+3. For Google Drive integration, set up Google Drive API:
+   - Go to [Google Cloud Console](https://console.cloud.google.com/)
+   - Create a new project or select existing one
+   - Enable Google Drive API
+   - Create OAuth 2.0 credentials
+   - Download credentials as `credentials.json` and place in project directory
 
 ## Usage
 
-### Web Interface (Recommended)
-
-1. **Start the web application**:
-   ```bash
-   python web_app.py
-   ```
-
-2. **Open your browser** and go to `http://localhost:5000`
-
-3. **Upload a name card image** and select your preferred Ollama model
-
-4. **View the extracted and structured results**
-
 ### Command Line Interface
 
+#### Process a single image:
 ```bash
-# Basic usage
 python app.py path/to/namecard.jpg
-
-# Specify a different model
-python app.py path/to/namecard.jpg --model llama3
-
-# Save results to file
-python app.py path/to/namecard.jpg --output results.json
-
-# Use different Ollama host
-python app.py path/to/namecard.jpg --ollama-host http://remote-host:11434
 ```
 
-### Example Output
-
-```json
-{
-  "image_path": "namecard.jpg",
-  "extracted_text": [
-    {
-      "text": "John Smith",
-      "confidence": 0.95,
-      "bbox": [[100, 50], [200, 50], [200, 80], [100, 80]]
-    },
-    {
-      "text": "Senior Developer",
-      "confidence": 0.92,
-      "bbox": [[100, 90], [220, 90], [220, 110], [100, 110]]
-    }
-  ],
-  "structured_data": {
-    "name": "John Smith",
-    "title": "Senior Developer",
-    "company": "Tech Corp",
-    "email": "john.smith@techcorp.com",
-    "phone": "+1-555-0123",
-    "address": "123 Main St, City, State 12345",
-    "website": "www.techcorp.com"
-  }
-}
+#### Process local folder:
+```bash
+python app.py /path/to/images --folder --output batch_results.json
 ```
 
-## Supported Image Formats
+#### Process Google Drive folder:
+```bash
+python app.py "NameCards" --google-drive --output drive_results.json
+```
 
-- PNG
-- JPG/JPEG
-- GIF
-- BMP
-- TIFF
+#### Process Google Drive folder by ID:
+```bash
+python app.py "1XxXxXxXxXxXxXxXxXxXxX" --google-drive
+```
+
+#### Custom credentials file:
+```bash
+python app.py "NameCards" --google-drive --credentials my_credentials.json
+```
+
+### Web Interface
+
+1. Start the web server:
+```bash
+python web_app.py
+```
+
+2. Open your browser and navigate to:
+```
+http://localhost:6001
+```
+
+3. Choose processing mode:
+   - **📷 Single Image**: Upload single image via drag-and-drop
+   - **☁️ Google Drive Folder**: Process entire Google Drive folder
+
+#### Google Drive Web Usage:
+1. Click "☁️ Google Drive Folder" tab
+2. Click "🔐 Check Google Drive Connection" to authenticate
+3. Select folder from dropdown list
+4. Click "☁️ Process Google Drive Folder"
+5. View batch results with expandable individual results
 
 ## Configuration
 
-### Environment Variables
+### Google Drive Setup
 
-- `OLLAMA_HOST`: Ollama server URL (default: `http://localhost:11434`)
+1. **Create Google Cloud Project**:
+   - Visit [Google Cloud Console](https://console.cloud.google.com/)
+   - Create new project or select existing
 
-### Adjusting OCR Confidence
+2. **Enable Google Drive API**:
+   - Go to "APIs & Services" → "Library"
+   - Search and enable "Google Drive API"
 
-Edit `app.py` and modify the confidence threshold:
+3. **Create OAuth 2.0 Credentials**:
+   - Go to "APIs & Services" → "Credentials"
+   - Click "Create Credentials" → "OAuth 2.0 Client IDs"
+   - Choose "Desktop application"
+   - Download JSON file as `credentials.json`
+
+4. **Place credentials file** in project root directory
+
+### HuggingFace Configuration
+
+```bash
+python app.py image.jpg --hf-token your_token_here --model openai/gpt-oss-20b
+```
+
+### Supported Image Formats
+
+- JPEG (.jpg, .jpeg)
+- PNG (.png)
+- BMP (.bmp)
+- TIFF (.tif, .tiff)
+- GIF (.gif)
+
+## Output Format
+
+The system extracts and structures the following information:
+
+```json
+{
+  "name": "Full name of the person",
+  "title": "Job title/position", 
+  "company": "Company name",
+  "email": "Email address",
+  "phone": "Phone number",
+  "address": "Physical address",
+  "website": "Website URL",
+  "university": "Educational institution",
+  "department": "Department/division",
+  "language": "Detected language",
+  "social_media": "Social media links",
+  "notes": "Additional notes",
+  "other": "Other relevant information"
+}
+```
+
+### Batch Processing Output
+
+```json
+{
+  "source": "google_drive",
+  "folder_name": "NameCards",
+  "total_images": 25,
+  "processed_images": 25,
+  "summary": {
+    "successful": 23,
+    "failed": 2
+  },
+  "results": [
+    {
+      "filename": "card1.jpg",
+      "drive_file_id": "1ABC...",
+      "structured_data": { "name": "...", "title": "..." }
+    }
+  ]
+}
+```
+
+## Technical Architecture
+
+### OCR Processing Pipeline
+
+1. **Multi-language Recognition**: 
+   - English OCR using PaddleOCR
+   - Japanese OCR using PaddleOCR
+   - Vietnamese OCR using PaddleOCR
+
+2. **Result Combination**: Merges and deduplicates results from all languages
+
+3. **Text Structuring**: Uses HuggingFace models to organize text into structured JSON
+
+4. **Google Drive Integration**: Downloads images to temporary files, processes, then cleans up
+
+### Models and Libraries
+
+- **OCR Engine**: PaddleOCR (supports 80+ languages)
+- **Text Processing**: HuggingFace Transformers
+- **Image Processing**: OpenCV for preprocessing
+- **Google Drive**: Google Drive API v3
+- **Web Framework**: Flask
+
+## API Endpoints
+
+### Web Application Endpoints
+
+- `GET /` - Main web interface
+- `POST /upload` - Single image upload processing
+- `GET /google-drive/auth-status` - Check Google Drive authentication
+- `GET /google-drive/folders` - List Google Drive folders
+- `POST /google-drive/process` - Process Google Drive folder
+
+## Performance and Optimization
+
+### Language Processing Strategy
+
+The system processes images with all three language models (English, Japanese, Vietnamese) and combines results for maximum accuracy:
 
 ```python
-if confidence > 0.5:  # Change this value (0.0 to 1.0)
+# Processes with multiple languages
+results_en = ocr_en.ocr(image_path)
+results_jp = ocr_japan.ocr(image_path) 
+results_vi = ocr_vi.ocr(image_path)
+
+# Combines and deduplicates
+combined_results = combine_all_language_results([
+    ('en', results_en),
+    ('japan', results_jp), 
+    ('vi', results_vi)
+])
 ```
+
+### Google Drive Optimization
+
+- **Temporary Files**: Downloads to temp files, auto-cleanup after processing
+- **Batch Processing**: Processes multiple images sequentially
+- **Error Handling**: Continues processing other images if individual files fail
+- **Progress Tracking**: Real-time progress updates in web interface
 
 ## Troubleshooting
 
-### Common Issues
+### Google Drive Issues
 
-1. **"Failed to connect to Ollama"**
-   - Ensure Ollama is running: `ollama serve`
-   - Check if the model is available: `ollama list`
-   - Verify the host URL is correct
+1. **Authentication Failed**:
+   ```bash
+   # Check credentials file exists
+   ls -la credentials.json
+   
+   # Re-download from Google Cloud Console if needed
+   ```
 
-2. **"No text could be extracted"**
-   - Ensure image is clear and well-lit
-   - Try different image formats
-   - Check if text is in English (or modify language settings)
+2. **Folder Not Found**:
+   - Verify folder exists in Google Drive
+   - Check folder permissions (must be accessible by your account)
+   - Try using folder ID instead of name
 
-3. **EasyOCR installation issues**
-   - On macOS with Apple Silicon: ensure you have the correct PyTorch version
-   - May require additional system dependencies
+3. **API Quota Exceeded**:
+   - Check Google Cloud Console quotas
+   - Enable billing if needed for higher quotas
 
-### Performance Notes
+### OCR Issues
 
-- First run may be slower as EasyOCR downloads models
-- Large images will take longer to process
-- GPU acceleration will improve performance if available
+1. **PaddleOCR Installation**:
+   ```bash
+   pip install paddlepaddle paddleocr
+   ```
 
-## Advanced Usage
+2. **Memory Issues**:
+   - Process images in smaller batches
+   - Use CPU-only mode if GPU memory is limited
 
-### Custom Prompt Engineering
+3. **Language Detection**:
+   - Ensure image quality is good
+   - Try preprocessing images for better contrast
 
-Modify the prompt in `app.py` to customize how Ollama processes the extracted text:
+### Web Interface Issues
 
-```python
-prompt = f"""
-Your custom prompt here...
-Text from business card: {text_content}
-"""
+1. **Port Already in Use**:
+   ```bash
+   python web_app.py --port 6002
+   ```
+
+2. **Large File Uploads**:
+   - Check Flask MAX_CONTENT_LENGTH setting
+   - Current limit: 16MB per file
+
+## Development
+
+### Project Structure
+
+```
+OCR-name-card/
+├── app.py                 # Command line interface
+├── web_app.py            # Web interface
+├── requirements.txt      # Python dependencies
+├── templates/
+│   └── index.html       # Web UI template
+├── uploads/             # Temporary upload directory
+├── credentials.json     # Google Drive credentials
+├── token.json          # Google Drive auth token
+└── README.md           # This file
 ```
 
-### Batch Processing
+### Adding New Features
 
-```bash
-# Process multiple images
-for img in *.jpg; do
-    python app.py "$img" --output "results_$(basename $img .jpg).json"
-done
-```
-
-## License
-
-MIT License - feel free to modify and use as needed.
+1. **New Language Support**: Add language code to PaddleOCR initialization
+2. **New Cloud Providers**: Extend GoogleDriveHandler pattern
+3. **New OCR Engines**: Implement similar to PaddleOCR integration
+4. **Enhanced UI**: Modify templates/index.html and add CSS/JS
 
 ## Contributing
 
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
+2. Create a feature branch: `git checkout -b feature-name`
+3. Test your changes with both CLI and web interface
+4. Update documentation if needed
 5. Submit a pull request
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Acknowledgments
+
+- **PaddleOCR** team for the excellent multi-language OCR capabilities
+- **HuggingFace** for transformer models and APIs
+- **Google** for Drive API integration
+- **Flask** community for the web framework
+- **OpenCV** community for image processing tools

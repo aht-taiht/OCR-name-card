@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Name Card Form View -->
+    <record id="view_namecard_form" model="ir.ui.view">
+        <field name="name">ocr.namecard.form</field>
+        <field name="model">ocr.namecard</field>
+        <field name="arch" type="xml">
+            <form string="Name Card OCR">
+                <header>
+                    <button name="action_process_card" 
+                            type="object" 
+                            string="Process Card" 
+                            class="oe_highlight"
+                            invisible="processing_status not in ['draft', 'error']"/>
+                    <button name="action_reprocess" 
+                            type="object" 
+                            string="Reprocess" 
+                            invisible="processing_status != 'done'"/>
+                    <button name="action_create_partner" 
+                            type="object" 
+                            string="Create Contact" 
+                            class="oe_highlight"
+                            invisible="processing_status != 'done' or partner_id"/>
+                    <field name="processing_status" widget="statusbar"/>
+                </header>
+                
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button class="oe_stat_button" 
+                                type="object" 
+                                name="action_create_partner"
+                                invisible="not partner_id"
+                                icon="fa-user">
+                            <field string="Contact" name="partner_id"/>
+                        </button>
+                    </div>
+                    
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+                    
+                    <group>
+                        <group string="Image Upload">
+                            <field name="image" widget="image" class="oe_avatar"/>
+                            <field name="image_filename"/>
+                            <field name="processing_model"/>
+                        </group>
+                        <group string="Processing Info">
+                            <field name="extraction_confidence" widget="percentage"/>
+                            <field name="processing_error" invisible="not processing_error"/>
+                        </group>
+                    </group>
+                    
+                    <notebook>
+                        <page string="Contact Information" name="contact_info">
+                            <group>
+                                <group string="Personal">
+                                    <field name="contact_name"/>
+                                    <field name="job_title"/>
+                                    <field name="email" widget="email"/>
+                                </group>
+                                <group string="Contact Details">
+                                    <field name="phone" widget="phone"/>
+                                    <field name="mobile" widget="phone"/>
+                                    <field name="website" widget="url"/>
+                                </group>
+                            </group>
+                            <group>
+                                <group string="Company">
+                                    <field name="company_name"/>
+                                </group>
+                                <group string="Address">
+                                    <field name="address" nolabel="1"/>
+                                </group>
+                            </group>
+                            <group string="Additional Information">
+                                <field name="other_info" nolabel="1"/>
+                            </group>
+                        </page>
+                        
+                        <page string="Raw Data" name="raw_data">
+                            <group>
+                                <field name="extracted_text" nolabel="1"/>
+                            </group>
+                            <separator string="AI Response"/>
+                            <group>
+                                <field name="raw_ai_response" nolabel="1"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+    
+    <!-- Name Card Tree View -->
+    <record id="view_namecard_tree" model="ir.ui.view">
+        <field name="name">ocr.namecard.tree</field>
+        <field name="model">ocr.namecard</field>
+        <field name="arch" type="xml">
+            <tree string="Name Cards" decoration-success="processing_status=='done'" 
+                  decoration-danger="processing_status=='error'" 
+                  decoration-warning="processing_status=='processing'">
+                <field name="name"/>
+                <field name="contact_name"/>
+                <field name="company_name"/>
+                <field name="email"/>
+                <field name="phone"/>
+                <field name="processing_status"/>
+                <field name="extraction_confidence" widget="percentage"/>
+                <field name="create_date"/>
+                <field name="partner_id"/>
+            </tree>
+        </field>
+    </record>
+    
+    <!-- Name Card Kanban View -->
+    <record id="view_namecard_kanban" model="ir.ui.view">
+        <field name="name">ocr.namecard.kanban</field>
+        <field name="model">ocr.namecard</field>
+        <field name="arch" type="xml">
+            <kanban string="Name Cards" default_group_by="processing_status">
+                <field name="name"/>
+                <field name="contact_name"/>
+                <field name="company_name"/>
+                <field name="email"/>
+                <field name="phone"/>
+                <field name="processing_status"/>
+                <field name="image"/>
+                <field name="partner_id"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_card oe_kanban_global_click">
+                            <div class="o_kanban_image">
+                                <img t-att-src="kanban_image('ocr.namecard', 'image', record.id.raw_value)" 
+                                     alt="Name Card" class="o_image_64_cover"/>
+                            </div>
+                            <div class="oe_kanban_details">
+                                <div class="o_kanban_record_top">
+                                    <div class="o_kanban_record_headings">
+                                        <strong class="o_kanban_record_title">
+                                            <field name="name"/>
+                                        </strong>
+                                    </div>
+                                </div>
+                                <div class="o_kanban_record_body">
+                                    <field name="contact_name"/>
+                                    <br/>
+                                    <field name="company_name"/>
+                                    <br/>
+                                    <field name="email"/>
+                                </div>
+                                <div class="o_kanban_record_bottom">
+                                    <div class="oe_kanban_bottom_left">
+                                        <field name="processing_status" widget="label_selection"/>
+                                    </div>
+                                    <div class="oe_kanban_bottom_right">
+                                        <span t-if="record.partner_id.raw_value" class="fa fa-user" title="Contact Created"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+    
+    <!-- Name Card Search View -->
+    <record id="view_namecard_search" model="ir.ui.view">
+        <field name="name">ocr.namecard.search</field>
+        <field name="model">ocr.namecard</field>
+        <field name="arch" type="xml">
+            <search string="Search Name Cards">
+                <field name="name"/>
+                <field name="contact_name"/>
+                <field name="company_name"/>
+                <field name="email"/>
+                <field name="phone"/>
+                
+                <filter string="Draft" name="draft" domain="[('processing_status', '=', 'draft')]"/>
+                <filter string="Processing" name="processing" domain="[('processing_status', '=', 'processing')]"/>
+                <filter string="Completed" name="done" domain="[('processing_status', '=', 'done')]"/>
+                <filter string="Error" name="error" domain="[('processing_status', '=', 'error')]"/>
+                
+                <separator/>
+                <filter string="With Contact" name="has_partner" domain="[('partner_id', '!=', False)]"/>
+                <filter string="Without Contact" name="no_partner" domain="[('partner_id', '=', False)]"/>
+                
+                <separator/>
+                <filter string="Today" name="today" domain="[('create_date', '>=', datetime.datetime.combine(context_today(), datetime.time(0,0,0)))]"/>
+                <filter string="This Week" name="week" domain="[('create_date', '>=', (context_today() - datetime.timedelta(days=7)).strftime('%Y-%m-%d'))]"/>
+                <filter string="This Month" name="month" domain="[('create_date', '>=', (context_today().replace(day=1)).strftime('%Y-%m-%d'))]"/>
+                
+                <group expand="0" string="Group By">
+                    <filter string="Status" name="group_status" context="{'group_by': 'processing_status'}"/>
+                    <filter string="Company" name="group_company" context="{'group_by': 'company_name'}"/>
+                    <filter string="Creation Date" name="group_date" context="{'group_by': 'create_date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    
+    <!-- Name Card Action -->
+    <record id="action_namecard" model="ir.actions.act_window">
+        <field name="name">Name Cards</field>
+        <field name="res_model">ocr.namecard</field>
+        <field name="view_mode">kanban,tree,form</field>
+        <field name="context">{'search_default_done': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Upload your first name card!
+            </p>
+            <p>
+                Upload name card images and let AI extract contact information automatically.
+            </p>
+        </field>
+    </record>
+</odoo>

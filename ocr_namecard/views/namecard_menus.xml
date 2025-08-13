@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Main Menu -->
+    <menuitem id="menu_namecard_main" 
+              name="Name Card OCR" 
+              sequence="90"
+              web_icon="ocr_namecard,static/description/icon.png"/>
+    
+    <!-- Name Cards Menu -->
+    <menuitem id="menu_namecard_cards" 
+              name="Name Cards" 
+              parent="menu_namecard_main" 
+              action="action_namecard" 
+              sequence="10"/>
+    
+    <!-- Configuration Menu -->
+    <menuitem id="menu_namecard_config" 
+              name="Configuration" 
+              parent="menu_namecard_main" 
+              sequence="90" 
+              groups="base.group_system"/>
+    
+    <!-- Settings Action -->
+    <record id="action_namecard_settings" model="ir.actions.act_window">
+        <field name="name">OCR Settings</field>
+        <field name="res_model">res.config.settings</field>
+        <field name="view_mode">form</field>
+        <field name="target">inline</field>
+        <field name="context">{'module': 'ocr_namecard'}</field>
+    </record>
+    
+    <!-- Settings Menu -->
+    <menuitem id="menu_namecard_settings" 
+              name="Settings" 
+              parent="menu_namecard_config" 
+              action="action_namecard_settings" 
+              sequence="10" 
+              groups="base.group_system"/>
+</odoo>

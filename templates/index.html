@@ -130,32 +130,117 @@
             overflow-x: auto;
             white-space: pre-wrap;
         }
+        .mode-btn {
+            background-color: #6c757d;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            flex: 1;
+        }
+        .mode-btn.active {
+            background-color: #007bff;
+        }
+        .mode-btn:hover {
+            opacity: 0.9;
+        }
+        .batch-results {
+            margin-top: 20px;
+        }
+        .batch-summary {
+            background-color: #e9ecef;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+        .result-item {
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            overflow: hidden;
+        }
+        .result-header {
+            background-color: #f8f9fa;
+            padding: 10px 15px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .result-header:hover {
+            background-color: #e9ecef;
+        }
+        .result-body {
+            padding: 15px;
+            display: none;
+        }
+        .result-body.show {
+            display: block;
+        }
+        .toggle-icon {
+            transition: transform 0.3s;
+        }
+        .toggle-icon.rotate {
+            transform: rotate(180deg);
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>📇 Name Card Reader</h1>
-        <p style="text-align: center; color: #666;">Upload a name card image to extract and structure the information using EasyOCR and Ollama</p>
+        <p style="text-align: center; color: #666;">Upload a name card image or process Google Drive folder to extract and structure information using PaddleOCR and HuggingFace</p>
         
-        <form id="uploadForm">
-            <div class="upload-area" id="uploadArea">
-                <p>📁 Click here to select an image or drag and drop</p>
-                <input type="file" id="fileInput" accept="image/*" style="display: none;">
+        <!-- Mode Selection -->
+        <div class="form-group">
+            <label>Processing Mode:</label>
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <button type="button" id="singleModeBtn" class="mode-btn active" onclick="switchMode('single')">📷 Single Image</button>
+                <button type="button" id="driveModeBtn" class="mode-btn" onclick="switchMode('drive')">☁️ Google Drive Folder</button>
             </div>
-            
+        </div>
+
+        <!-- Single Image Mode -->
+        <div id="singleMode">
+            <form id="uploadForm">
+                <div class="upload-area" id="uploadArea">
+                    <p>📁 Click here to select an image or drag and drop</p>
+                    <input type="file" id="fileInput" accept="image/*" style="display: none;">
+                </div>
+                
+                <div class="form-group">
+                    <label for="modelSelect">HuggingFace Model:</label>
+                    <select id="modelSelect" name="model">
+                        <option value="openai/gpt-oss-20b">openai/gpt-oss-20b (default)</option>
+                        <option value="microsoft/DialoGPT-medium">microsoft/DialoGPT-medium</option>
+                        <option value="microsoft/DialoGPT-large">microsoft/DialoGPT-large</option>
+                    </select>
+                </div>
+                
+                <button type="submit" id="submitBtn">🔍 Process Name Card</button>
+            </form>
+        </div>
+
+        <!-- Google Drive Mode -->
+        <div id="driveMode" style="display: none;">
             <div class="form-group">
-                <label for="modelSelect">Ollama Model:</label>
-                <select id="modelSelect" name="model">
-                    <option value="gpt-oss:20b">gpt-oss:20b (default)</option>
-                    <option value="llama3.2">llama3.2</option>
-                    <option value="llama3">llama3</option>
-                    <option value="mistral">mistral</option>
-                    <option value="codellama">codellama</option>
-                </select>
+                <button type="button" id="checkAuthBtn" onclick="checkGoogleDriveAuth()">🔐 Check Google Drive Connection</button>
             </div>
             
-            <button type="submit" id="submitBtn">🔍 Process Name Card</button>
-        </form>
+            <div id="authStatus" style="margin: 15px 0;"></div>
+            
+            <div id="folderSelection" style="display: none;">
+                <div class="form-group">
+                    <label for="folderSelect">Select Google Drive Folder:</label>
+                    <select id="folderSelect" style="width: 100%; padding: 10px;">
+                        <option value="">Loading folders...</option>
+                    </select>
+                </div>
+                
+                <button type="button" id="processDriveBtn" onclick="processGoogleDriveFolder()">☁️ Process Google Drive Folder</button>
+            </div>
+        </div>
 
         <div id="loading" class="loading" style="display: none;">
             <div class="spinner"></div>
@@ -251,6 +336,121 @@
             }
         });
 
+        // Mode switching
+        function switchMode(mode) {
+            if (mode === 'single') {
+                document.getElementById('singleMode').style.display = 'block';
+                document.getElementById('driveMode').style.display = 'none';
+                document.getElementById('singleModeBtn').classList.add('active');
+                document.getElementById('driveModeBtn').classList.remove('active');
+            } else if (mode === 'drive') {
+                document.getElementById('singleMode').style.display = 'none';
+                document.getElementById('driveMode').style.display = 'block';
+                document.getElementById('singleModeBtn').classList.remove('active');
+                document.getElementById('driveModeBtn').classList.add('active');
+            }
+            // Clear results when switching modes
+            results.innerHTML = '';
+            results.style.display = 'none';
+        }
+
+        // Google Drive functions
+        async function checkGoogleDriveAuth() {
+            const authStatus = document.getElementById('authStatus');
+            const folderSelection = document.getElementById('folderSelection');
+            
+            authStatus.innerHTML = '<div class="loading"><div class="spinner"></div><p>Checking authentication...</p></div>';
+            
+            try {
+                const response = await fetch('/google-drive/auth-status');
+                const data = await response.json();
+                
+                if (data.authenticated) {
+                    authStatus.innerHTML = '<div class="success">✅ Google Drive connected successfully!</div>';
+                    await loadGoogleDriveFolders();
+                    folderSelection.style.display = 'block';
+                } else {
+                    authStatus.innerHTML = `<div class="error">❌ ${data.error}</div>`;
+                    folderSelection.style.display = 'none';
+                }
+            } catch (error) {
+                authStatus.innerHTML = `<div class="error">❌ Connection failed: ${error.message}</div>`;
+                folderSelection.style.display = 'none';
+            }
+        }
+
+        async function loadGoogleDriveFolders() {
+            const folderSelect = document.getElementById('folderSelect');
+            folderSelect.innerHTML = '<option value="">Loading folders...</option>';
+            
+            try {
+                const response = await fetch('/google-drive/folders');
+                const data = await response.json();
+                
+                if (data.error) {
+                    folderSelect.innerHTML = '<option value="">Error loading folders</option>';
+                    return;
+                }
+                
+                folderSelect.innerHTML = '<option value="">Select a folder...</option>';
+                data.folders.forEach(folder => {
+                    const option = document.createElement('option');
+                    option.value = folder.id;
+                    option.textContent = folder.name;
+                    option.dataset.name = folder.name;
+                    folderSelect.appendChild(option);
+                });
+                
+            } catch (error) {
+                folderSelect.innerHTML = '<option value="">Error loading folders</option>';
+            }
+        }
+
+        async function processGoogleDriveFolder() {
+            const folderSelect = document.getElementById('folderSelect');
+            const selectedOption = folderSelect.options[folderSelect.selectedIndex];
+            
+            if (!selectedOption.value) {
+                alert('Please select a folder first!');
+                return;
+            }
+            
+            const folderId = selectedOption.value;
+            const folderName = selectedOption.dataset.name;
+            
+            // Show loading
+            loading.style.display = 'block';
+            results.style.display = 'none';
+            document.getElementById('processDriveBtn').disabled = true;
+            
+            try {
+                const response = await fetch('/google-drive/process', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        folder_id: folderId,
+                        folder_name: folderName
+                    })
+                });
+                
+                const data = await response.json();
+                
+                // Hide loading
+                loading.style.display = 'none';
+                document.getElementById('processDriveBtn').disabled = false;
+                
+                // Show results
+                displayBatchResults(data);
+                
+            } catch (error) {
+                loading.style.display = 'none';
+                document.getElementById('processDriveBtn').disabled = false;
+                displayError('Error processing Google Drive folder: ' + error.message);
+            }
+        }
+
         function displayResults(data) {
             results.innerHTML = '';
             results.style.display = 'block';
@@ -263,18 +463,79 @@
             results.innerHTML = `
                 <div class="success">✅ Successfully processed name card!</div>
                 
-                <h3>📝 Extracted Text:</h3>
-                <div class="extracted-text">
-                    ${data.extracted_text.map(item => 
-                        `<div>• ${item.text} (confidence: ${(item.confidence * 100).toFixed(1)}%)</div>`
-                    ).join('')}
-                </div>
-
                 <h3>🏗️ Structured Data:</h3>
                 <div class="structured-data">
                     <pre>${JSON.stringify(data.structured_data, null, 2)}</pre>
                 </div>
             `;
+        }
+
+        function displayBatchResults(data) {
+            results.innerHTML = '';
+            results.style.display = 'block';
+
+            if (data.error) {
+                results.innerHTML = `<div class="error">❌ Error: ${data.error}</div>`;
+                return;
+            }
+
+            let html = `
+                <div class="batch-results">
+                    <div class="batch-summary">
+                        <h3>📊 Google Drive Processing Results</h3>
+                        <p><strong>Folder:</strong> ${data.folder_name}</p>
+                        <p><strong>Total Images:</strong> ${data.total_images}</p>
+                        <p><strong>✅ Successful:</strong> ${data.summary.successful}</p>
+                        <p><strong>❌ Failed:</strong> ${data.summary.failed}</p>
+                    </div>
+                    
+                    <h3>📋 Individual Results:</h3>
+            `;
+
+            data.results.forEach((result, index) => {
+                const isSuccess = !result.error;
+                const statusIcon = isSuccess ? '✅' : '❌';
+                const statusClass = isSuccess ? 'success' : 'error';
+                
+                html += `
+                    <div class="result-item">
+                        <div class="result-header" onclick="toggleResult(${index})">
+                            <span>${statusIcon} ${result.filename}</span>
+                            <span class="toggle-icon" id="toggle-${index}">▼</span>
+                        </div>
+                        <div class="result-body" id="result-${index}">
+                `;
+                
+                if (result.error) {
+                    html += `<div class="${statusClass}">Error: ${result.error}</div>`;
+                } else {
+                    html += `
+                        <h4>Structured Data:</h4>
+                        <pre>${JSON.stringify(result.structured_data, null, 2)}</pre>
+                    `;
+                }
+                
+                html += `
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+            results.innerHTML = html;
+        }
+
+        function toggleResult(index) {
+            const resultBody = document.getElementById(`result-${index}`);
+            const toggleIcon = document.getElementById(`toggle-${index}`);
+            
+            if (resultBody.classList.contains('show')) {
+                resultBody.classList.remove('show');
+                toggleIcon.classList.remove('rotate');
+            } else {
+                resultBody.classList.add('show');
+                toggleIcon.classList.add('rotate');
+            }
         }
 
         function displayError(message) {
