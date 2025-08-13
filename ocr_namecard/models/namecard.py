@@ -383,7 +383,7 @@ class NameCard(models.Model):
         
         try:
             # Get HuggingFace token from system parameters
-            hf_token = self.env['ir.config_parameter'].sudo().get_param('ocr_namecard.hf_token', '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')
+            hf_token = self.env['ir.config_parameter'].sudo().get_param('ocr_namecard.hf_token', 'TOKEN_NOT_SET')
             model_name = self.env['ir.config_parameter'].sudo().get_param('ocr_namecard.hf_model', 'openai/gpt-oss-20b')
             
             client = InferenceClient(

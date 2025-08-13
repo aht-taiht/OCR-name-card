@@ -119,7 +119,7 @@ class GoogleDriveHandler:
 
 
 class NameCardReader:
-    def __init__(self, model_name="openai/gpt-oss-20b", hf_token='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'):
+    def __init__(self, model_name="openai/gpt-oss-20b", hf_token=''):
         """Initialize the name card reader with PaddleOCR and HuggingFace configuration."""
         
         # Initialize PaddleOCR with multiple languages
@@ -144,7 +144,7 @@ class NameCardReader:
             
         self.client = InferenceClient(
             provider="fireworks-ai",
-            api_key="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",
+            api_key="TOKEN",
         )
         
     def extract_text(self, image_path):
